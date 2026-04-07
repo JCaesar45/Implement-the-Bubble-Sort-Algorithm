@@ -1,0 +1,876 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bubble Sort | Algorithmic Art Installation</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --neon-cyan: #00f3ff;
+      --neon-pink: #ff00ff;
+      --neon-purple: #9d00ff;
+      --neon-yellow: #ffea00;
+      --dark-bg: #0a0a0f;
+      --glass: rgba(255, 255, 255, 0.03);
+    }
+
+    body {
+      background: var(--dark-bg);
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    #canvas-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.4;
+    }
+
+    .grain-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      text-align: center;
+      padding: 4rem 0;
+      position: relative;
+    }
+
+    .glitch-title {
+      font-size: clamp(3rem, 10vw, 8rem);
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      text-transform: uppercase;
+      position: relative;
+      display: inline-block;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink), var(--neon-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite;
+      background-size: 200% 200%;
+    }
+
+    @keyframes gradientShift {
+
+      0%,
+      100% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+    }
+
+    .subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--neon-cyan);
+      margin-top: 1rem;
+      opacity: 0.8;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+    }
+
+    .main-stage {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 3rem;
+      margin: 3rem 0;
+    }
+
+    .visualization-container {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .visualization-container::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, var(--neon-cyan), var(--neon-pink), var(--neon-purple), var(--neon-cyan));
+      border-radius: 24px;
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.3s;
+      filter: blur(10px);
+    }
+
+    .visualization-container:hover::before {
+      opacity: 0.5;
+    }
+
+    #sort-canvas {
+      width: 100%;
+      height: 400px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .controls-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .control-group {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .control-group:hover {
+      border-color: var(--neon-cyan);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 243, 255, 0.1);
+    }
+
+    .control-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--neon-cyan);
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .btn {
+      background: transparent;
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      padding: 0.8rem 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: var(--neon-cyan);
+      transition: left 0.3s;
+      z-index: -1;
+    }
+
+    .btn:hover {
+      color: var(--dark-bg);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+    }
+
+    .btn:hover::before {
+      left: 0;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn.secondary {
+      border-color: var(--neon-pink);
+      color: var(--neon-pink);
+    }
+
+    .btn.secondary::before {
+      background: var(--neon-pink);
+    }
+
+    .btn.secondary:hover {
+      box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+    }
+
+    .slider-container {
+      margin: 1rem 0;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: var(--neon-cyan);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.8);
+      transition: transform 0.2s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .value-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--neon-yellow);
+      text-align: right;
+      margin-top: 0.5rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .stat-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-box::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .stat-box:hover::after {
+      transform: scaleX(1);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--neon-cyan);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      opacity: 0.6;
+      margin-top: 0.5rem;
+    }
+
+    .code-window {
+      background: #0d0d12;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      margin-top: 2rem;
+    }
+
+    .code-header {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot.red {
+      background: #ff5f56;
+    }
+
+    .dot.yellow {
+      background: #ffbd2e;
+    }
+
+    .dot.green {
+      background: #27c93f;
+    }
+
+    .code-title {
+      margin-left: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      opacity: 0.6;
+    }
+
+    pre {
+      padding: 1.5rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    code {
+      color: #e0e0e0;
+    }
+
+    .keyword {
+      color: var(--neon-pink);
+    }
+
+    .function {
+      color: var(--neon-cyan);
+    }
+
+    .string {
+      color: var(--neon-yellow);
+    }
+
+    .comment {
+      color: #6a6a6a;
+    }
+
+    .number {
+      color: #ff6b6b;
+    }
+
+    .complexity-section {
+      margin-top: 4rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .complexity-card {
+      background: var(--glass);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .complexity-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+    }
+
+    .complexity-title {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--neon-cyan);
+    }
+
+    .big-o {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 1rem 0;
+    }
+
+    footer {
+      text-align: center;
+      padding: 4rem 0;
+      opacity: 0.6;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+    }
+
+    .pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .glow-text {
+      text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 40px currentColor;
+    }
+
+    @media (max-width: 768px) {
+      .controls-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="grain-overlay"></div>
+  <canvas id="canvas-bg"></canvas>
+
+  <div class="container">
+    <header>
+      <h1 class="glitch-title">Bubble Sort</h1>
+      <p class="subtitle">Algorithmic Art Installation // v2.0.4</p>
+    </header>
+
+    <div class="main-stage">
+      <div class="visualization-container">
+        <canvas id="sort-canvas"></canvas>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-value" id="comparisons">0</div>
+            <div class="stat-label">Comparisons</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="swaps">0</div>
+            <div class="stat-label">Swaps</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="time">0ms</div>
+            <div class="stat-label">Time</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-panel">
+        <div class="control-group">
+          <span class="control-label">// Control Panel</span>
+          <button class="btn" onclick="startSort()">Initialize Sort</button>
+          <button class="btn secondary" onclick="resetArray()">Regenerate Data</button>
+          <button class="btn secondary" onclick="stopSort()">Abort</button>
+        </div>
+
+        <div class="control-group">
+          <span class="control-label">// Parameters</span>
+          <div class="slider-container">
+            <label style="font-size: 0.8rem; opacity: 0.8;">Array Size</label>
+            <input type="range" id="sizeSlider" min="10" max="100" value="50" oninput="updateSize(this.value)">
+            <div class="value-display" id="sizeValue">50 elements</div>
+          </div>
+          <div class="slider-container">
+            <label style="font-size: 0.8rem; opacity: 0.8;">Delay (ms)</label>
+            <input type="range" id="speedSlider" min="1" max="100" value="20" oninput="updateSpeed(this.value)">
+            <div class="value-display" id="speedValue">20ms</div>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <span class="control-label">// Status</span>
+          <div id="status" style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--neon-cyan); padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 8px; border-left: 3px solid var(--neon-cyan);">
+            Ready to initialize sorting sequence...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-window">
+      <div class="code-header">
+        <div class="dot red"></div>
+        <div class="dot yellow"></div>
+        <div class="dot green"></div>
+        <span class="code-title">bubble_sort.js</span>
+      </div>
+      <pre><code><span class="keyword">function</span> <span class="function">bubbleSort</span>(array) {
+    <span class="keyword">const</span> arr = [...array];           <span class="comment">// Clone array to preserve original</span>
+    <span class="keyword">const</span> n = arr.length;
+    <span class="keyword">let</span> comparisons = <span class="number">0</span>;
+    <span class="keyword">let</span> swaps = <span class="number">0</span>;
+    
+    <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i < n; i++) {
+        <span class="keyword">let</span> swapped = <span class="keyword">false</span>;
+        
+        <span class="keyword">for</span> (<span class="keyword">let</span> j = <span class="number">0</span>; j < n - <span class="number">1</span> - i; j++) {
+            comparisons++;
+            
+            <span class="keyword">if</span> (arr[j] > arr[j + <span class="number">1</span>]) {
+                <span class="comment">// Visual swap trigger</span>
+                [arr[j], arr[j + <span class="number">1</span>]] = [arr[j + <span class="number">1</span>], arr[j]];
+                swaps++;
+                swapped = <span class="keyword">true</span>;
+            }
+        }
+        
+        <span class="keyword">if</span> (!swapped) <span class="keyword">break</span>;          <span class="comment">// Optimization: exit if sorted</span>
+    }
+    
+    <span class="keyword">return</span> { sorted: arr, comparisons, swaps };
+}</code></pre>
+    </div>
+
+    <div class="complexity-section">
+      <div class="complexity-card">
+        <h3 class="complexity-title">Time Complexity</h3>
+        <div class="big-o">O(n²)</div>
+        <p style="opacity: 0.8; line-height: 1.6;">Quadratic time complexity in average and worst cases. Each element must be compared with every other element, creating nested loops that scale exponentially with input size.</p>
+      </div>
+
+      <div class="complexity-card">
+        <h3 class="complexity-title">Space Complexity</h3>
+        <div class="big-o">O(n)</div>
+        <p style="opacity: 0.8; line-height: 1.6;">Linear space for the copied array. The algorithm operates with O(1) auxiliary space, but we maintain immutability by returning a new sorted array rather than mutating the input.</p>
+      </div>
+
+      <div class="complexity-card">
+        <h3 class="complexity-title">Best Case</h3>
+        <div class="big-o">O(n)</div>
+        <p style="opacity: 0.8; line-height: 1.6;">When the input array is already sorted, the optimized implementation detects this in a single pass and exits early, achieving linear time complexity.</p>
+      </div>
+    </div>
+
+    <footer>
+      <p>CRAFTED WITH PRECISION // BUBBLE SORT VISUALIZATION ENGINE</p>
+      <p style="margin-top: 0.5rem; font-size: 0.7rem;">JavaScript ES6+ • HTML5 Canvas • CSS3 Grid/Flexbox</p>
+    </footer>
+  </div>
+
+  <script>
+    // Background Particle System
+    const bgCanvas = document.getElementById('canvas-bg');
+    const bgCtx = bgCanvas.getContext('2d');
+    let particles = [];
+
+    function resizeBg() {
+      bgCanvas.width = window.innerWidth;
+      bgCanvas.height = window.innerHeight;
+    }
+    resizeBg();
+    window.addEventListener('resize', resizeBg);
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * bgCanvas.width;
+        this.y = Math.random() * bgCanvas.height;
+        this.size = Math.random() * 2 + 0.5;
+        this.speedX = (Math.random() - 0.5) * 0.5;
+        this.speedY = (Math.random() - 0.5) * 0.5;
+        this.life = Math.random() * 100 + 100;
+        this.hue = Math.random() * 60 + 180; // Cyan to purple range
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life--;
+        if (this.life <= 0 || this.x < 0 || this.x > bgCanvas.width ||
+          this.y < 0 || this.y > bgCanvas.height) {
+          this.reset();
+        }
+      }
+      draw() {
+        bgCtx.beginPath();
+        bgCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        bgCtx.fillStyle = `hsla(${this.hue}, 100%, 50%, ${this.life / 200})`;
+        bgCtx.fill();
+      }
+    }
+    for (let i = 0; i < 100; i++) {
+      particles.push(new Particle());
+    }
+
+    function animateBg() {
+      bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      // Connect nearby particles
+      particles.forEach((p1, i) => {
+        particles.slice(i + 1).forEach(p2 => {
+          const dx = p1.x - p2.x;
+          const dy = p1.y - p2.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 100) {
+            bgCtx.beginPath();
+            bgCtx.moveTo(p1.x, p1.y);
+            bgCtx.lineTo(p2.x, p2.y);
+            bgCtx.strokeStyle = `hsla(180, 100%, 50%, ${0.1 * (1 - dist / 100)})`;
+            bgCtx.stroke();
+          }
+        });
+      });
+      requestAnimationFrame(animateBg);
+    }
+    animateBg();
+    // Bubble Sort Visualization
+    const canvas = document.getElementById('sort-canvas');
+    const ctx = canvas.getContext('2d');
+    let array = [];
+    let sorting = false;
+    let abortController = null;
+    let delay = 20;
+    let comparisons = 0;
+    let swaps = 0;
+    let startTime = 0;
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width - 64;
+      canvas.height = 400;
+      draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function generateArray(size = 50) {
+      array = [];
+      for (let i = 0; i < size; i++) {
+        array.push({
+          value: Math.random() * 100 + 10,
+          state: 'default' // default, compare, swap, sorted
+        });
+      }
+      comparisons = 0;
+      swaps = 0;
+      updateStats();
+      draw();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const barWidth = canvas.width / array.length;
+      const maxVal = Math.max(...array.map(a => a.value));
+      array.forEach((item, index) => {
+        const height = (item.value / maxVal) * (canvas.height - 40);
+        const x = index * barWidth;
+        const y = canvas.height - height - 20;
+        // Gradient based on state
+        let gradient = ctx.createLinearGradient(0, y, 0, canvas.height - 20);
+        switch (item.state) {
+          case 'compare':
+            gradient.addColorStop(0, '#ffea00');
+            gradient.addColorStop(1, '#ff00ff');
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ff00ff';
+            break;
+          case 'swap':
+            gradient.addColorStop(0, '#00f3ff');
+            gradient.addColorStop(1, '#9d00ff');
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#00f3ff';
+            break;
+          case 'sorted':
+            gradient.addColorStop(0, '#00ff88');
+            gradient.addColorStop(1, '#00f3ff');
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00ff88';
+            break;
+          default:
+            gradient.addColorStop(0, 'rgba(0, 243, 255, 0.6)');
+            gradient.addColorStop(1, 'rgba(157, 0, 255, 0.3)');
+            ctx.shadowBlur = 0;
+        }
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x + 1, y, barWidth - 2, height);
+        // Reset shadow
+        ctx.shadowBlur = 0;
+        // Draw value on top for small arrays
+        if (array.length <= 30) {
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px JetBrains Mono';
+          ctx.textAlign = 'center';
+          ctx.fillText(Math.floor(item.value), x + barWidth / 2, y - 5);
+        }
+      });
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => {
+        if (abortController) {
+          const check = () => {
+            if (abortController.signal.aborted) {
+              resolve();
+            } else {
+              setTimeout(resolve, ms);
+            }
+          };
+          check();
+        } else {
+          setTimeout(resolve, ms);
+        }
+      });
+    }
+    async function bubbleSort() {
+      const n = array.length;
+      const arr = array;
+      for (let i = 0; i < n; i++) {
+        let swapped = false;
+        for (let j = 0; j < n - 1 - i; j++) {
+          if (abortController && abortController.signal.aborted) return;
+          // Highlight comparison
+          arr[j].state = 'compare';
+          arr[j + 1].state = 'compare';
+          comparisons++;
+          updateStats();
+          draw();
+          await sleep(delay);
+          if (arr[j].value > arr[j + 1].value) {
+            // Swap
+            arr[j].state = 'swap';
+            arr[j + 1].state = 'swap';
+            swaps++;
+            updateStats();
+            draw();
+            await sleep(delay);
+            const temp = arr[j].value;
+            arr[j].value = arr[j + 1].value;
+            arr[j + 1].value = temp;
+            swapped = true;
+          }
+          // Reset state
+          arr[j].state = 'default';
+          arr[j + 1].state = 'default';
+        }
+        // Mark as sorted
+        arr[n - 1 - i].state = 'sorted';
+        draw();
+        if (!swapped) {
+          // Mark remaining as sorted
+          for (let k = 0; k < n - 1 - i; k++) {
+            arr[k].state = 'sorted';
+          }
+          draw();
+          break;
+        }
+      }
+      // Ensure first element is marked sorted
+      if (arr[0]) arr[0].state = 'sorted';
+      draw();
+    }
+    async function startSort() {
+      if (sorting) return;
+      sorting = true;
+      abortController = new AbortController();
+      startTime = Date.now();
+      document.getElementById('status').textContent = 'Sorting in progress...';
+      document.getElementById('status').style.borderLeftColor = '#ffea00';
+      await bubbleSort();
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      document.getElementById('time').textContent = duration + 'ms';
+      if (!abortController.signal.aborted) {
+        document.getElementById('status').textContent = 'Sort complete. Array is now ordered.';
+        document.getElementById('status').style.borderLeftColor = '#00ff88';
+        // Victory flash
+        canvas.style.boxShadow = '0 0 50px rgba(0, 255, 136, 0.5)';
+        setTimeout(() => {
+          canvas.style.boxShadow = 'none';
+        }, 1000);
+      }
+      sorting = false;
+      abortController = null;
+    }
+
+    function stopSort() {
+      if (abortController) {
+        abortController.abort();
+        sorting = false;
+        document.getElementById('status').textContent = 'Sorting aborted by user.';
+        document.getElementById('status').style.borderLeftColor = '#ff5f56';
+      }
+    }
+
+    function resetArray() {
+      if (sorting) stopSort();
+      setTimeout(() => {
+        const size = parseInt(document.getElementById('sizeSlider').value);
+        generateArray(size);
+        document.getElementById('status').textContent = 'New dataset generated. Ready to sort.';
+        document.getElementById('status').style.borderLeftColor = '#00f3ff';
+        document.getElementById('time').textContent = '0ms';
+      }, 100);
+    }
+
+    function updateSize(val) {
+      document.getElementById('sizeValue').textContent = val + ' elements';
+      if (!sorting) generateArray(parseInt(val));
+    }
+
+    function updateSpeed(val) {
+      delay = parseInt(val);
+      document.getElementById('speedValue').textContent = val + 'ms';
+    }
+
+    function updateStats() {
+      document.getElementById('comparisons').textContent = comparisons;
+      document.getElementById('swaps').textContent = swaps;
+    }
+    // Initialize
+    resizeCanvas();
+    generateArray(50);
+  </script>
+</body>
+
+</html>
